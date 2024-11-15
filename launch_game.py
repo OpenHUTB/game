@@ -28,7 +28,8 @@ def check_port(ip, port):
 def launch_carla():
     # 如果CarlaUE4.exe已经启动，则跳过
     host = 'localhost'
-    port = 2000
+    port = 2000  # 服务器端口
+    # 查看交通管理器端口，如果存在则杀死
     if check_port(host, port):
         print(f'The port {port} on {host} is open. Pass launch CarlaUE4.exe')
         return 0
