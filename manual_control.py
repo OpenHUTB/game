@@ -55,10 +55,10 @@
     CTRL + +     : 将重放的开始时间增加1秒i (+SHIFT = 10 秒)
     CTRL + -     : 将重放的开始时间减少1秒 (+SHIFT = 10 秒)
 
-    Alt + [0-9]  : 0:Town10；1: 由“T字路口组成的”基本城镇；2：更小的城镇
-                   3：最复杂的 城镇；4：有高速公路和小镇的无限循环。
-                   5：方形网格城镇；6：高速公路和密歇根左转；
-                   7：乡村；8、9：大地图。
+    Alt + [F1-F10]  : F10:Town10；F1: 由“T字路口组成的”基本城镇；F2：更小的城镇
+                   F3：最复杂的 城镇；F4：有高速公路和小镇的无限循环。
+                   F5：方形网格城镇；F6：高速公路和密歇根左转；
+                   F7：乡村；F8、F9：大地图。
 
     F1           : 切换头显
     H/?          : 切换帮助信息
@@ -431,34 +431,34 @@ class KeyboardControl(object):
             current_lights = self._lights
         # 处理组合键(Alt+1)
         key_pressed = pygame.key.get_pressed()
-        if key_pressed[K_LALT] and key_pressed[K_1]:
+        if key_pressed[K_LALT] and key_pressed[K_F1]:
             world = client.load_world("Town01")
             main()  # 重新启动当前客户端
-        elif key_pressed[K_LALT] and key_pressed[K_2]:
+        elif key_pressed[K_LALT] and key_pressed[K_F2]:
             world = client.load_world("Town02")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_3]:
+        elif key_pressed[K_LALT] and key_pressed[K_F3]:
             world = client.load_world("Town03")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_4]:
+        elif key_pressed[K_LALT] and key_pressed[K_F4]:
             world = client.load_world("Town04")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_5]:
+        elif key_pressed[K_LALT] and key_pressed[K_F5]:
             world = client.load_world("Town05")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_6]:
+        elif key_pressed[K_LALT] and key_pressed[K_F6]:
             world = client.load_world("Town06")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_7]:
+        elif key_pressed[K_LALT] and key_pressed[K_F7]:
             world = client.load_world("Town07")
             main()
         elif key_pressed[K_LALT] and key_pressed[K_8]:
             world = client.load_world("Town12")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_9]:
+        elif key_pressed[K_LALT] and key_pressed[K_F9]:
             world = client.load_world("Town13")
             main()
-        elif key_pressed[K_LALT] and key_pressed[K_0]:
+        elif key_pressed[K_LALT] and key_pressed[K_F10]:
             world = client.load_world("Town10HD")
             main()
 
