@@ -317,7 +317,7 @@ class World(object):
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
         # 如果生成的是行人，则使用和车0不一样的视角3，看起来更加自然
-        if self._actor_filter.startswith('walker.'):
+        if self._actor_filter.startswith('walker.pedestrian'):
             cam_pos_index = self.camera_manager.transform_index if self.camera_manager is not None else 3
         # Set up the sensors.
         self.collision_sensor = CollisionSensor(self.player, self.hud)
@@ -533,7 +533,22 @@ class KeyboardControl(object):
                         else:  # 如果车门原来是关闭的，则按o打开
                             world.hud.notification("Opening doors")
                             world.doors_are_open = True
-                            world.player.open_door(carla.VehicleDoor.All)
+                            # 处理行人按开门的动作，即开最近的门
+                            if world.player.type_id.startswith('walker.pedestrian'):
+                                vehicles = world.world.get_actors().filter('vehicle.*')
+                                t = world.player.get_transform()  # 当前行人玩家的位姿
+                                # 获取当前行人玩家和其他所有除自己外的所有车辆的距离
+                                distance = lambda l: math.sqrt(
+                                    (l.x - t.location.x) ** 2 + (l.y - t.location.y) ** 2 + (l.z - t.location.z) ** 2)
+                                vehicles = [(distance(x.get_location()), x) for x in vehicles if x.id != world.player.id]
+                                vehicles = sorted(vehicles, key=lambda vehicles: vehicles[0])  # 按离行人玩家的距离从小到大进行排序
+                                if vehicles[0][0] < 5:  # 距离足够小才打开门
+                                    nearest_vehicle = vehicles[0][1]
+                                    nearest_vehicle.set_autopilot(False)  # 将车从交通管理器中剥离（关闭自动驾驶模式）
+                                    nearest_vehicle.open_door(carla.VehicleDoor.All)  # 打开车的所有门
+                                world.doors_are_open = False  # 可以打开多辆车的门（控制车）
+                            else:
+                                world.player.open_door(carla.VehicleDoor.All)  # 如果是行人则开不了门
                     except Exception:
                         pass
                 elif event.key == K_t:
