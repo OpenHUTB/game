@@ -271,10 +271,11 @@ class World(object):
     def restart(self):
         self.player_max_speed = 1.589
         self.player_max_speed_fast = 3.713
-        # Keep same camera config if the camera manager exists.
+        # 如果相机管理器存在，则保留相同的相机配置。
         cam_index = self.camera_manager.index if self.camera_manager is not None else 0
+        # 默认为0（调整了初始相机的角度），行人初始最好是3，车辆最好是0
         cam_pos_index = self.camera_manager.transform_index if self.camera_manager is not None else 0
-        # Get a random blueprint.
+        # 获得一个随机蓝图。
         blueprint_list = get_actor_blueprints(self.world, self._actor_filter, self._actor_generation)
         if not blueprint_list:
             raise ValueError("Couldn't find any blueprints with the specified filters")
@@ -290,12 +291,12 @@ class World(object):
             blueprint.set_attribute('driver_id', driver_id)
         if blueprint.has_attribute('is_invincible'):
             blueprint.set_attribute('is_invincible', 'true')
-        # set the max speed
+        # 设置最大速度
         if blueprint.has_attribute('speed'):
             self.player_max_speed = float(blueprint.get_attribute('speed').recommended_values[1])
             self.player_max_speed_fast = float(blueprint.get_attribute('speed').recommended_values[2])
 
-        # Spawn the player.
+        # 生成玩家
         if self.player is not None:
             spawn_point = self.player.get_transform()
             spawn_point.location.z += 2.0
@@ -315,6 +316,9 @@ class World(object):
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
+        # 如果生成的是行人，则使用和车0不一样的视角3，看起来更加自然
+        if self._actor_filter.startswith('walker.'):
+            cam_pos_index = self.camera_manager.transform_index if self.camera_manager is not None else 3
         # Set up the sensors.
         self.collision_sensor = CollisionSensor(self.player, self.hud)
         self.lane_invasion_sensor = LaneInvasionSensor(self.player, self.hud)
@@ -404,7 +408,7 @@ class World(object):
 
 
 class KeyboardControl(object):
-    """Class that handles keyboard input."""
+    """处理键盘输入的类。"""
     def __init__(self, world, start_in_autopilot):
         self._autopilot_enabled = start_in_autopilot
         self._ackermann_enabled = False
@@ -488,7 +492,7 @@ class KeyboardControl(object):
                     else:
                         world.restart()
                 elif event.key == K_F1:
-                    world.hud.toggle_info()
+                    world.hud.toggle_info()  # 按F1关闭或显示左边的头显信息
                 elif event.key == K_v and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_map_layer(reverse=True)
                 elif event.key == K_v:
@@ -498,9 +502,9 @@ class KeyboardControl(object):
                 elif event.key == K_b:
                     world.load_map_layer()
                 elif event.key == K_h or (event.key == K_SLASH and pygame.key.get_mods() & KMOD_SHIFT):
-                    world.hud.help.toggle()
+                    world.hud.help.toggle()  # 按 H 键显示或者关闭帮助信息
                 elif event.key == K_TAB:
-                    world.camera_manager.toggle_camera()
+                    world.camera_manager.toggle_camera()  # 按 Tab 切换相机角度
                 elif event.key == K_c and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_weather(reverse=True)
                 elif event.key == K_c:
@@ -522,11 +526,11 @@ class KeyboardControl(object):
                         world.hud.notification("Enabled Constant Velocity Mode at 60 km/h")
                 elif event.key == K_o:
                     try:
-                        if world.doors_are_open:
+                        if world.doors_are_open:  # 如果车门原来是开的，则按o关闭
                             world.hud.notification("Closing Doors")
                             world.doors_are_open = False
                             world.player.close_door(carla.VehicleDoor.All)
-                        else:
+                        else:  # 如果车门原来是关闭的，则按o打开
                             world.hud.notification("Opening doors")
                             world.doors_are_open = True
                             world.player.open_door(carla.VehicleDoor.All)
@@ -1284,7 +1288,7 @@ class RadarSensor(object):
         bound_y = 0.5 + self._parent.bounding_box.extent.y
         bound_z = 0.5 + self._parent.bounding_box.extent.z
 
-        self.velocity_range = 7.5 # m/s
+        self.velocity_range = 7.5  # m/s
         world = self._parent.get_world()
         self.debug = world.debug
         bp = world.get_blueprint_library().find('sensor.other.radar')
@@ -1339,7 +1343,7 @@ class RadarSensor(object):
                 color=carla.Color(r, g, b))
 
 # ==============================================================================
-# -- CameraManager -------------------------------------------------------------
+# -- 相机管理器 CameraManager -------------------------------------------------------------
 # ==============================================================================
 
 
@@ -1723,8 +1727,7 @@ def Display_Detection():
 
 def main():
     # 调用
-    a = Display_Detection()
-    print(a)  # a可以任意遍历其中的内容a[0]代表屏幕数量等等...
+    # a = Display_Detection()
 
     # (2, (4480, 1440), (2560, 1440), (1920, 1080))#运行结果：屏幕数量、总屏幕尺寸、主屏幕尺寸、副屏尺寸
 
