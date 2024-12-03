@@ -1570,12 +1570,15 @@ def game_loop(args):
     # 必须在pygame.init()之后运行，否则运行报错：pygame.error: video system not initialized
     info_object = pygame.display.Info()
     # 获取当前机器屏幕的宽和高（分辨率太高会导致客户端延迟得卡，故显示的宽高都除以一个大于1的值）
-    scale_size = 1.5
-    args.width = info_object.current_w / scale_size
-    args.height = info_object.current_h / scale_size
+    scale_size = 1
+    # args.width = info_object.current_w / scale_size
+    # args.height = info_object.current_h / scale_size
+    _, _, res = Display_Detection()
+    # args.width = res[0] / scale_size
+    # args.height = res[1] / scale_size
     is_full_screen = True  # 模式是全屏
 
-    use_keyboard_control = False
+    use_keyboard_control = True  # 默认以键盘控制
 
     try:
         client = carla.Client(args.host, args.port)
@@ -1598,6 +1601,7 @@ def game_loop(args):
             print("WARNING: You are currently in asynchronous mode and could "
                   "experience some issues with the traffic simulation")
 
+        # pygame.display 访问显示设备
         # 对窗口参数进行设置，这个函数会返回一个Surface对象
         # 增加 pygame.FULLSCREEN 表示启动游戏时默认进入全屏
         # pygame.FULLSCREEN 创建全屏的窗口
@@ -1605,11 +1609,11 @@ def game_loop(args):
         # pygame.HWSURFACE 使用硬件加速，只在FULLSCREEN时有效
         display = pygame.display.set_mode(
             (args.width, args.height),
-            pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN)
+            pygame.HWSURFACE | pygame.DOUBLEBUF)  # | pygame.FULLSCREEN
         display.fill((0, 0, 0))
         pygame.display.flip()
 
-        hud = HUD(args.width, args.height)
+        hud = HUD(args.width, args.height)  # 头显
         world = World(sim_world, hud, args)
         if use_keyboard_control:
             controller = KeyboardControl(world, args.autopilot)  # 使用键盘控制（湖工商场景中虚幻注释掉）
@@ -1658,12 +1662,72 @@ def game_loop(args):
         pygame.quit()
 
 
+# -*- coding: utf-8 -*-
+"""
+功能：识别两块显示器各自的分辨率
+"""
+"""模块导入"""
+from win32api import GetSystemMetrics
+from win32con import SM_CMONITORS, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
+
+def Display_Detection():
+    # 显示器数量检测
+    MonitorNumber = GetSystemMetrics(SM_CMONITORS)
+    # 主屏幕尺寸检测
+    MajorScreenWidth = GetSystemMetrics(0)  # 主屏幕宽
+    MajorScreenHeight = GetSystemMetrics(1)  # 主屏幕高
+    # print("主屏幕尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
+    # 屏幕最大尺寸
+    aScreenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN)  # 屏幕最大宽度
+    aScreenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN)  # 屏幕最大高度
+    AllScreen=(aScreenWidth, aScreenHeight)
+    # print("屏幕总尺寸:", aScreenWidth, "*", aScreenHeight)
+    # 当前主流的分辨率基数是宽，偶数是高
+    ResolvingPower = [1280, 720, 1920, 1080, 2560, 1440, 3840, 2160, 4096, 2160, 7680, 4320]
+
+    if MonitorNumber > 1:  # 屏幕数量判断print(MonitorNumber)就可以知道有多少块屏幕
+        SecondaryScreenWidth = aScreenWidth - MajorScreenWidth  # 副屏宽=总屏幕宽-当前屏幕宽
+        # print("副屏宽",SecondaryScreenWidth)
+
+        # 主屏横竖屏检测
+        if GetSystemMetrics(0) > GetSystemMetrics(1):
+            MainScreen = (GetSystemMetrics(0), GetSystemMetrics(1))
+            # print("主屏(横屏)尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
+        else:
+            MainScreen = (GetSystemMetrics(0), GetSystemMetrics(1))
+            # print("主屏(竖屏)尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
+
+        # 横屏状态
+        for i in range(0, len(ResolvingPower) - 1, 2):
+            # print("i",ResolvingPower[i])
+            if SecondaryScreenWidth == ResolvingPower[i]:
+                SecondaryScreen = (ResolvingPower[i], ResolvingPower[i + 1])
+                # print("副屏(横屏)尺寸：", ResolvingPower[i], ResolvingPower[i + 1])
+                # return "副屏(竖屏)尺寸：",SecondaryScreen
+                break
+        # 竖屏状态
+        for i in range(1, len(ResolvingPower) - 1, 2):
+            # print("i",ResolvingPower[i])
+            if SecondaryScreenWidth == ResolvingPower[i]:
+                SecondaryScreen = (ResolvingPower[i], ResolvingPower[i + 1])
+                # print("副屏(竖屏)尺寸：", ResolvingPower[i], ResolvingPower[i - 1])
+                # return "副屏(竖屏)尺寸",SecondaryScreen
+                break
+    return MonitorNumber, AllScreen, MainScreen
+
+
 # ==============================================================================
 # -- main() --------------------------------------------------------------------
 # ==============================================================================
 
 
 def main():
+    # 调用
+    a = Display_Detection()
+    print(a)  # a可以任意遍历其中的内容a[0]代表屏幕数量等等...
+
+    # (2, (4480, 1440), (2560, 1440), (1920, 1080))#运行结果：屏幕数量、总屏幕尺寸、主屏幕尺寸、副屏尺寸
+
     argparser = argparse.ArgumentParser(
         description='CARLA Manual Control Client')
     argparser.add_argument(
