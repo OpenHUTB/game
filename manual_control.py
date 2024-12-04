@@ -282,7 +282,10 @@ class World(object):
         if not blueprint_list:
             raise ValueError("Couldn't find any blueprints with the specified filters")
         if self.first_launch:
-            blueprint = blueprint_list[5]  # 4 玻璃黑；9 车大（玻璃透明）；5合适
+            if self._actor_filter.startswith('walker.pedestrian.'):
+                blueprint = blueprint_list[20]  # 选行人：成年行人 9 - 变体 2，蓝图 ID: walker.pedestrian.0029
+            else:
+                blueprint = blueprint_list[5]  # 车辆： 4 玻璃黑；9 车大（玻璃透明）；5合适
             self.first_launch = False
         else:
             blueprint = random.choice(blueprint_list)
@@ -548,7 +551,7 @@ class KeyboardControl(object):
                                 if vehicles[0][0] < 5:  # 距离足够小才打开门
                                     nearest_vehicle = vehicles[0][1]
                                     nearest_vehicle.set_autopilot(False)  # 将车从交通管理器中剥离（关闭自动驾驶模式）
-                                    nearest_vehicle.open_door(carla.VehicleDoor.All)  # 打开车的所有门
+                                    nearest_vehicle.open_door(carla.VehicleDoor.FL)  # 打开车的左前门
                                 world.doors_are_open = False  # 可以打开多辆车的门（控制车）
                             else:
                                 world.player.open_door(carla.VehicleDoor.All)  # 如果是行人则开不了门

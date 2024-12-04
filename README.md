@@ -7,7 +7,9 @@
 ```shell
 python manual_control.py --filter walker.pedestrian.*
 ```
-使用方向键进行移动，空格进行跳跃。
+使用方向键进行移动，空格进行跳跃。按`o`打开车门。
+效果图：
+![](./fig/open_doors.png)
 
 ## 参考
 
