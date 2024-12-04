@@ -246,6 +246,8 @@ class World(object):
         self._actor_filter = args.filter
         self._actor_generation = args.generation
         self._gamma = args.gamma
+        # 记录是否是第一次启动参与者（用于固定第一次生成的车或者人，用于测试），必须在restart()之前，函数中用到了
+        self.first_launch = True
         self.restart()
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
@@ -279,7 +281,11 @@ class World(object):
         blueprint_list = get_actor_blueprints(self.world, self._actor_filter, self._actor_generation)
         if not blueprint_list:
             raise ValueError("Couldn't find any blueprints with the specified filters")
-        blueprint = random.choice(blueprint_list)
+        if self.first_launch:
+            blueprint = blueprint_list[5]  # 4 玻璃黑；9 车大（玻璃透明）；5合适
+            self.first_launch = False
+        else:
+            blueprint = random.choice(blueprint_list)
         blueprint.set_attribute('role_name', self.actor_role_name)
         if blueprint.has_attribute('terramechanics'):
             blueprint.set_attribute('terramechanics', 'true')
@@ -1374,6 +1380,7 @@ class CameraManager(object):
         if not self._parent.type_id.startswith("walker.pedestrian"):
             # 车辆的5个视角
             self._camera_transforms = [
+                (carla.Transform(carla.Location(x=-0 * bound_x, y=-0.25 * bound_y, z=0.95 * bound_z), carla.Rotation(pitch=0, yaw=0, roll=0)), Attachment.Rigid),
                 (carla.Transform(carla.Location(x=-2.0*bound_x, y=+0.0*bound_y, z=2.0*bound_z), carla.Rotation(pitch=8.0)), Attachment.SpringArmGhost),
                 (carla.Transform(carla.Location(x=+0.8*bound_x, y=+0.0*bound_y, z=1.3*bound_z)), Attachment.Rigid),
                 (carla.Transform(carla.Location(x=+1.9*bound_x, y=+1.0*bound_y, z=1.2*bound_z)), Attachment.SpringArmGhost),
@@ -1590,7 +1597,6 @@ def game_loop(args):
     scale_size = 1
     # args.width = info_object.current_w / scale_size
     # args.height = info_object.current_h / scale_size
-    _, _, res = Display_Detection()
     # args.width = res[0] / scale_size
     # args.height = res[1] / scale_size
     is_full_screen = True  # 模式是全屏
@@ -1679,70 +1685,12 @@ def game_loop(args):
         pygame.quit()
 
 
-# -*- coding: utf-8 -*-
-"""
-功能：识别两块显示器各自的分辨率
-"""
-"""模块导入"""
-from win32api import GetSystemMetrics
-from win32con import SM_CMONITORS, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
-
-def Display_Detection():
-    # 显示器数量检测
-    MonitorNumber = GetSystemMetrics(SM_CMONITORS)
-    # 主屏幕尺寸检测
-    MajorScreenWidth = GetSystemMetrics(0)  # 主屏幕宽
-    MajorScreenHeight = GetSystemMetrics(1)  # 主屏幕高
-    # print("主屏幕尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
-    # 屏幕最大尺寸
-    aScreenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN)  # 屏幕最大宽度
-    aScreenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN)  # 屏幕最大高度
-    AllScreen=(aScreenWidth, aScreenHeight)
-    # print("屏幕总尺寸:", aScreenWidth, "*", aScreenHeight)
-    # 当前主流的分辨率基数是宽，偶数是高
-    ResolvingPower = [1280, 720, 1920, 1080, 2560, 1440, 3840, 2160, 4096, 2160, 7680, 4320]
-
-    if MonitorNumber > 1:  # 屏幕数量判断print(MonitorNumber)就可以知道有多少块屏幕
-        SecondaryScreenWidth = aScreenWidth - MajorScreenWidth  # 副屏宽=总屏幕宽-当前屏幕宽
-        # print("副屏宽",SecondaryScreenWidth)
-
-        # 主屏横竖屏检测
-        if GetSystemMetrics(0) > GetSystemMetrics(1):
-            MainScreen = (GetSystemMetrics(0), GetSystemMetrics(1))
-            # print("主屏(横屏)尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
-        else:
-            MainScreen = (GetSystemMetrics(0), GetSystemMetrics(1))
-            # print("主屏(竖屏)尺寸：", GetSystemMetrics(0), "*", GetSystemMetrics(1))
-
-        # 横屏状态
-        for i in range(0, len(ResolvingPower) - 1, 2):
-            # print("i",ResolvingPower[i])
-            if SecondaryScreenWidth == ResolvingPower[i]:
-                SecondaryScreen = (ResolvingPower[i], ResolvingPower[i + 1])
-                # print("副屏(横屏)尺寸：", ResolvingPower[i], ResolvingPower[i + 1])
-                # return "副屏(竖屏)尺寸：",SecondaryScreen
-                break
-        # 竖屏状态
-        for i in range(1, len(ResolvingPower) - 1, 2):
-            # print("i",ResolvingPower[i])
-            if SecondaryScreenWidth == ResolvingPower[i]:
-                SecondaryScreen = (ResolvingPower[i], ResolvingPower[i + 1])
-                # print("副屏(竖屏)尺寸：", ResolvingPower[i], ResolvingPower[i - 1])
-                # return "副屏(竖屏)尺寸",SecondaryScreen
-                break
-    return MonitorNumber, AllScreen, MainScreen
-
-
 # ==============================================================================
 # -- main() --------------------------------------------------------------------
 # ==============================================================================
 
 
 def main():
-    # 调用
-    # a = Display_Detection()
-
-    # (2, (4480, 1440), (2560, 1440), (1920, 1080))#运行结果：屏幕数量、总屏幕尺寸、主屏幕尺寸、副屏尺寸
 
     argparser = argparse.ArgumentParser(
         description='CARLA Manual Control Client')
