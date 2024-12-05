@@ -14,4 +14,5 @@ python manual_control.py --filter walker.pedestrian.*
 ## 参考
 
 * [中文文档](https://openhutb.github.io/carla_doc/)
+* [侠盗猎车5](https://github.com/OpenHUTB/gta5) 
 
