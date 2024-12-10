@@ -283,7 +283,7 @@ class World(object):
             raise ValueError("Couldn't find any blueprints with the specified filters")
         if self.first_launch:
             if self._actor_filter.startswith('walker.pedestrian.'):
-                blueprint = blueprint_list[20]  # 选行人：成年行人 9 - 变体 2，蓝图 ID: walker.pedestrian.0029
+                blueprint = blueprint_list[21]  # 选行人 20：成年行人 9 - 变体 2，蓝图 ID: walker.pedestrian.0029
             else:
                 blueprint = blueprint_list[5]  # 车辆： 4 玻璃黑；9 车大（玻璃透明）；5合适
             self.first_launch = False
@@ -371,7 +371,7 @@ class World(object):
             self.radar_sensor = None
 
     def modify_vehicle_physics(self, actor):
-        #If actor is not a vehicle, we cannot use the physics control
+        # 如果参与者不是车，我们不能使用物理控制
         try:
             physics_control = actor.get_physics_control()
             physics_control.use_sweep_wheel_collision = True
@@ -428,18 +428,19 @@ class KeyboardControl(object):
             world.player.set_light_state(self._lights)
             # 按照预期速度运行
         elif isinstance(world.player, carla.Walker):
-            self._control = carla.WalkerControl()
-            self._autopilot_enabled = False
+            self._control = carla.WalkerControl()  # 初始化行人控制器
+            self._autopilot_enabled = False  # 启动时不是自动驾驶模式
             self._rotation = world.player.get_transform().rotation
         else:
             raise NotImplementedError("Actor type not supported")
         self._steer_cache = 0.0
         world.hud.notification("按 'H' 或者 '?' 显示帮助信息。", seconds=4.0)
 
+    # 处理pygame的事件
     def parse_events(self, client, world, clock, sync_mode):
         if isinstance(self._control, carla.VehicleControl):
             current_lights = self._lights
-        # 处理组合键(Alt+1)
+        # 处理组合键(Alt+F1)
         key_pressed = pygame.key.get_pressed()
         if key_pressed[K_LALT] and key_pressed[K_F1]:
             world = client.load_world("Town01")
@@ -671,6 +672,7 @@ class KeyboardControl(object):
                         current_lights ^= carla.VehicleLightState.RightBlinker
 
         if not self._autopilot_enabled:
+            # 如果控制的是车辆
             if isinstance(self._control, carla.VehicleControl):
                 self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
                 self._control.reverse = self._control.gear < 0
@@ -696,6 +698,7 @@ class KeyboardControl(object):
                     # Update hud with the newest ackermann control
                     world.hud.update_ackermann_control(self._ackermann_control)
 
+            # 如果控制的是行人（控制器是行人控制器WalkerControl）
             elif isinstance(self._control, carla.WalkerControl):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time(), world)
                 world.player.apply_control(self._control)
@@ -742,6 +745,7 @@ class KeyboardControl(object):
 
     def _parse_walker_keys(self, keys, milliseconds, world):
         self._control.speed = 0.0
+        # 按下箭头或者s表示速度设置为0（停止）
         if keys[K_DOWN] or keys[K_s]:
             self._control.speed = 0.0
         if keys[K_LEFT] or keys[K_a]:
@@ -751,7 +755,13 @@ class KeyboardControl(object):
             self._control.speed = .01
             self._rotation.yaw += 0.08 * milliseconds
         if keys[K_UP] or keys[K_w]:
-            self._control.speed = world.player_max_speed_fast if pygame.key.get_mods() & KMOD_SHIFT else world.player_max_speed
+            # pygame.key.get_mods(): 这将确定哪个修改键被按下，修改键是与Shift、Alt和Ctrl组合的普通键
+            # 为了检查是否有任何修改键被按下，你必须首先调用get_mods方法，然后跟着K_MOD。方法调用和常量之间用按位与运算符分隔
+            # pygame.key.get_mods() & KMOD_SHIFT 表示按上箭头或者w箭时，同时按shift箭，表示跑步（4 m/s）
+            # 修改为：默认是快速跑，按住shift为走路
+            # TODO 同时按UP键、Shift键、空格，后面再前进就没作用了（再按空格和shift可以解除）
+            self._control.speed = world.player_max_speed if pygame.key.get_mods() & KMOD_SHIFT else world.player_max_speed_fast
+        # 如果按了空格，表示进行跳跃
         self._control.jump = keys[K_SPACE]
         self._rotation.yaw = round(self._rotation.yaw, 1)
         self._control.direction = self._rotation.get_forward_vector()
@@ -1027,8 +1037,8 @@ class HUD(object):
                 ]
         elif isinstance(c, carla.WalkerControl):
             self._info_text += [
-                ('Speed:', c.speed, 0.0, 5.556),
-                ('Jump:', c.jump)]
+                ('速度:', c.speed, 0.0, 5.556),
+                ('跳跃:', c.jump)]
         self._info_text += [
             '',
             '碰撞：',
@@ -1598,8 +1608,8 @@ def game_loop(args):
     info_object = pygame.display.Info()
     # 获取当前机器屏幕的宽和高（分辨率太高会导致客户端延迟得卡，故显示的宽高都除以一个大于1的值）
     scale_size = 1
-    # args.width = info_object.current_w / scale_size
-    # args.height = info_object.current_h / scale_size
+    #args.width = info_object.current_w / scale_size
+    #args.height = info_object.current_h / scale_size
     # args.width = res[0] / scale_size
     # args.height = res[1] / scale_size
     is_full_screen = True  # 模式是全屏
@@ -1653,6 +1663,7 @@ def game_loop(args):
             sim_world.wait_for_tick()
 
         clock = pygame.time.Clock()
+        #i = 0
         while True:
             if args.sync:
                 sim_world.tick()
@@ -1673,6 +1684,8 @@ def game_loop(args):
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
+            #i = i+1
+            #print(i)
 
     finally:
 
@@ -1723,6 +1736,7 @@ def main():
         '--res',
         metavar='WIDTHxHEIGHT',
         default='1280x720',
+        #default=f'{3440*3}x2160',
         help='window resolution (default: 1280x720)')
     argparser.add_argument(
         '--filter',
