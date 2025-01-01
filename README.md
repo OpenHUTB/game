@@ -18,6 +18,8 @@ python manual_control.py --filter walker.pedestrian.*
 
 一直按着空格会一直朝天上跳跃上升。
 
+注意：如果按前进箭头没反应，空格键会跳跃，说明需要先按`Shift`键，再使用前进键。
+
 ## 参考
 
 * [中文文档](https://openhutb.github.io/carla_doc/)
